@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Guardian Eye - Driver Safety Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+  <!-- MediaPipe Face Mesh & Camera Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <span class="logo-dot"></span>
+        <h1>Guardian Eye</h1>
+      </div>
+      <span id="badge-status" class="badge">Standby</span>
+    </header>
+
+    <section class="video-container">
+      <video id="webcam" playsinline autoplay muted></video>
+      <div id="warning-banner" class="warning-banner hidden">
+        <div class="warning-content">
+          <span class="warning-icon">⚠️</span>
+          <span id="warning-text">DROWSINESS DETECTED!</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Metrics Grid -->
+    <section class="dashboard">
+      <div class="metric-card">
+        <span class="metric-title">Eye Aspect (EAR)</span>
+        <span id="ear-display" class="metric-value">0.00</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Driver State</span>
+        <span id="state-display" class="metric-value status-good">Awake</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Head Pose</span>
+        <span id="pose-display" class="metric-value">Center</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-title">Total Alerts</span>
+        <span id="alert-counter" class="metric-value">0</span>
+      </div>
+    </section>
+
+    <button id="btn-toggle" class="btn-primary">Activate Monitor</button>
+
+    <!-- Real-Time Activity Log -->
+    <section class="log-section">
+      <div class="log-header">
+        <h2>Live Incident Log</h2>
+        <button id="btn-clear" class="btn-text">Clear</button>
+      </div>
+      <ul id="log-list" class="log-list">
+        <li class="empty-log">No incident records yet.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+<!-- In templates/index.html, replace the <section class="dashboard"> section with: -->
+<section class="dashboard">
+  <div class="metric-card">
+    <span class="metric-title">Live Speed</span>
+    <span id="speed-display" class="metric-value">0 km/h</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-title">Driver State</span>
+    <span id="state-display" class="metric-value status-good">Normal</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-title">Eye Aspect (EAR)</span>
+    <span id="ear-display" class="metric-value">0.00</span>
+  </div>
+  <div class="metric-card">
+    <span class="metric-title">Head Pose</span>
+    <span id="pose-display" class="metric-value">Center</span>
+  </div>
+</section>
