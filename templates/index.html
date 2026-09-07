@@ -3,63 +3,110 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Guardian Eye - Driver Safety Monitor</title>
+  <title>Guardian Eye - Cockpit HUD</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- MediaPipe Face Mesh & Camera Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
+  <div class="hud-ambient-glow"></div>
   <main class="app-shell">
+    
+    <!-- HUD Header -->
     <header class="app-header">
       <div class="brand">
-        <span class="logo-dot"></span>
-        <h1>Guardian Eye</h1>
+        <div class="radar-pulse">
+          <span class="pulse-ring"></span>
+          <span class="core-dot"></span>
+        </div>
+        <div>
+          <h1>GUARDIAN <span>EYE</span></h1>
+          <p class="subtitle">AI DRIVER TELEMETRY</p>
+        </div>
       </div>
-      <span id="badge-status" class="badge">Standby</span>
+      <div id="badge-status" class="hud-pill pill-standby">STANDBY</div>
     </header>
 
+    <!-- Camera Viewport -->
     <section class="video-container">
       <video id="webcam" playsinline autoplay muted></video>
+      <div class="hud-reticle">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+      </div>
       <div id="warning-banner" class="warning-banner hidden">
-        <div class="warning-content">
-          <span class="warning-icon">⚠️</span>
-          <span id="warning-text">DROWSINESS DETECTED!</span>
+        <div class="warning-box">
+          <div class="pulse-alert-icon">⚠️</div>
+          <span id="warning-text">CRITICAL ALERT</span>
+          <span class="warning-sub">IMMEDIATE ATTENTION REQUIRED</span>
         </div>
       </div>
     </section>
 
-    <!-- Metrics Grid -->
-    <section class="dashboard">
-      <div class="metric-card">
-        <span class="metric-title">Eye Aspect (EAR)</span>
-        <span id="ear-display" class="metric-value">0.00</span>
+    <!-- Telemetry Cards -->
+    <section class="telemetry-grid">
+      <!-- Speed Dial Card -->
+      <div class="telemetry-card speed-card">
+        <span class="card-label">VEHICLE VELOCITY</span>
+        <div class="speed-dial">
+          <span id="speed-display" class="speed-value">0</span>
+          <span class="speed-unit">KM/H</span>
+        </div>
+        <div class="speed-bar-track">
+          <div id="speed-progress" class="speed-bar-fill"></div>
+        </div>
       </div>
-      <div class="metric-card">
-        <span class="metric-title">Driver State</span>
-        <span id="state-display" class="metric-value status-good">Awake</span>
+
+      <!-- State Card -->
+      <div class="telemetry-card">
+        <span class="card-label">DRIVER STATE</span>
+        <span id="state-display" class="metric-value status-good">ATTENTIVE</span>
+        <span class="metric-sub" id="state-sub">SYSTEM OPTIMAL</span>
       </div>
-      <div class="metric-card">
-        <span class="metric-title">Head Pose</span>
-        <span id="pose-display" class="metric-value">Center</span>
+
+      <!-- EAR Gauge Card -->
+      <div class="telemetry-card">
+        <span class="card-label">EYE ASPECT RATIO</span>
+        <div class="metric-inline">
+          <span id="ear-display" class="metric-value ear-value">0.00</span>
+          <span class="metric-target">/ 0.22</span>
+        </div>
+        <div class="ear-track">
+          <div id="ear-fill" class="ear-fill"></div>
+        </div>
       </div>
-      <div class="metric-card">
-        <span class="metric-title">Total Alerts</span>
-        <span id="alert-counter" class="metric-value">0</span>
+
+      <!-- Posture Card -->
+      <div class="telemetry-card">
+        <span class="card-label">HEAD POSE</span>
+        <span id="pose-display" class="metric-value pose-value">CENTER</span>
+        <span class="metric-sub">PITCH & YAW NORMAL</span>
       </div>
     </section>
 
-    <button id="btn-toggle" class="btn-primary">Activate Monitor</button>
+    <!-- Controls -->
+    <button id="btn-toggle" class="btn-hud">
+      <span class="btn-text">INITIALIZE SYSTEM</span>
+      <span class="btn-glow"></span>
+    </button>
 
-    <!-- Real-Time Activity Log -->
-    <section class="log-section">
+    <!-- Telemetry Logs -->
+    <section class="log-panel">
       <div class="log-header">
-        <h2>Live Incident Log</h2>
-        <button id="btn-clear" class="btn-text">Clear</button>
+        <div class="log-title">
+          <span class="log-dot"></span>
+          <span>FLIGHT RECORDER</span>
+        </div>
+        <button id="btn-clear" class="btn-clear">CLEAR LOGS</button>
       </div>
       <ul id="log-list" class="log-list">
-        <li class="empty-log">No incident records yet.</li>
+        <li class="empty-log">Telemetry stream waiting for initialization...</li>
       </ul>
     </section>
   </main>
@@ -67,22 +114,3 @@
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
-<!-- In templates/index.html, replace the <section class="dashboard"> section with: -->
-<section class="dashboard">
-  <div class="metric-card">
-    <span class="metric-title">Live Speed</span>
-    <span id="speed-display" class="metric-value">0 km/h</span>
-  </div>
-  <div class="metric-card">
-    <span class="metric-title">Driver State</span>
-    <span id="state-display" class="metric-value status-good">Normal</span>
-  </div>
-  <div class="metric-card">
-    <span class="metric-title">Eye Aspect (EAR)</span>
-    <span id="ear-display" class="metric-value">0.00</span>
-  </div>
-  <div class="metric-card">
-    <span class="metric-title">Head Pose</span>
-    <span id="pose-display" class="metric-value">Center</span>
-  </div>
-</section>
