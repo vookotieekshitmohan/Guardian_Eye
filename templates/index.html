@@ -3,113 +3,84 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Guardian Eye - Cockpit HUD</title>
+  <title>Guardian Eye</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
 <body>
-  <div class="hud-ambient-glow"></div>
-  <main class="app-shell">
+  <div class="app-container">
     
-    <!-- HUD Header -->
-    <header class="app-header">
+    <!-- Top Bar -->
+    <header class="navbar">
       <div class="brand">
-        <div class="radar-pulse">
-          <span class="pulse-ring"></span>
-          <span class="core-dot"></span>
-        </div>
-        <div>
-          <h1>GUARDIAN <span>EYE</span></h1>
-          <p class="subtitle">AI DRIVER TELEMETRY</p>
-        </div>
+        <span class="brand-badge"></span>
+        <span class="brand-title">Guardian Eye</span>
       </div>
-      <div id="badge-status" class="hud-pill pill-standby">STANDBY</div>
+      <span id="badge-status" class="status-pill status-standby">Standby</span>
     </header>
 
-    <!-- Camera Viewport -->
-    <section class="video-container">
+    <!-- Camera Feed Card -->
+    <div class="card camera-card">
       <video id="webcam" playsinline autoplay muted></video>
-      <div class="hud-reticle">
-        <span class="corner tl"></span>
-        <span class="corner tr"></span>
-        <span class="corner bl"></span>
-        <span class="corner br"></span>
-      </div>
-      <div id="warning-banner" class="warning-banner hidden">
-        <div class="warning-box">
-          <div class="pulse-alert-icon">⚠️</div>
-          <span id="warning-text">CRITICAL ALERT</span>
-          <span class="warning-sub">IMMEDIATE ATTENTION REQUIRED</span>
+      <div id="warning-banner" class="warning-overlay hidden">
+        <div class="warning-content">
+          <span class="warning-icon">⚠️</span>
+          <span id="warning-text" class="warning-label">Attention Needed</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <section class="grid-stats">
+      <div class="card stat-card">
+        <span class="stat-label">Speed</span>
+        <div class="stat-main">
+          <span id="speed-display" class="stat-value">0</span>
+          <span class="stat-unit">km/h</span>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <span class="stat-label">Driver State</span>
+        <span id="state-display" class="stat-value text-safe">Attentive</span>
+      </div>
+
+      <div class="card stat-card">
+        <span class="stat-label">Eye Ratio</span>
+        <div class="stat-main">
+          <span id="ear-display" class="stat-value">0.00</span>
+          <span class="stat-sub">/ 0.22</span>
+        </div>
+      </div>
+
+      <div class="card stat-card">
+        <span class="stat-label">Head Pose</span>
+        <span id="pose-display" class="stat-value">Center</span>
       </div>
     </section>
 
-    <!-- Telemetry Cards -->
-    <section class="telemetry-grid">
-      <!-- Speed Dial Card -->
-      <div class="telemetry-card speed-card">
-        <span class="card-label">VEHICLE VELOCITY</span>
-        <div class="speed-dial">
-          <span id="speed-display" class="speed-value">0</span>
-          <span class="speed-unit">KM/H</span>
-        </div>
-        <div class="speed-bar-track">
-          <div id="speed-progress" class="speed-bar-fill"></div>
-        </div>
-      </div>
-
-      <!-- State Card -->
-      <div class="telemetry-card">
-        <span class="card-label">DRIVER STATE</span>
-        <span id="state-display" class="metric-value status-good">ATTENTIVE</span>
-        <span class="metric-sub" id="state-sub">SYSTEM OPTIMAL</span>
-      </div>
-
-      <!-- EAR Gauge Card -->
-      <div class="telemetry-card">
-        <span class="card-label">EYE ASPECT RATIO</span>
-        <div class="metric-inline">
-          <span id="ear-display" class="metric-value ear-value">0.00</span>
-          <span class="metric-target">/ 0.22</span>
-        </div>
-        <div class="ear-track">
-          <div id="ear-fill" class="ear-fill"></div>
-        </div>
-      </div>
-
-      <!-- Posture Card -->
-      <div class="telemetry-card">
-        <span class="card-label">HEAD POSE</span>
-        <span id="pose-display" class="metric-value pose-value">CENTER</span>
-        <span class="metric-sub">PITCH & YAW NORMAL</span>
-      </div>
-    </section>
-
-    <!-- Controls -->
-    <button id="btn-toggle" class="btn-hud">
-      <span class="btn-text">INITIALIZE SYSTEM</span>
-      <span class="btn-glow"></span>
+    <!-- Primary Control -->
+    <button id="btn-toggle" class="btn-primary">
+      <span class="btn-text">Start Monitoring</span>
     </button>
 
-    <!-- Telemetry Logs -->
-    <section class="log-panel">
-      <div class="log-header">
-        <div class="log-title">
-          <span class="log-dot"></span>
-          <span>FLIGHT RECORDER</span>
-        </div>
-        <button id="btn-clear" class="btn-clear">CLEAR LOGS</button>
+    <!-- Incident Activity Card -->
+    <section class="card logs-card">
+      <div class="logs-header">
+        <span class="logs-title">Safety Log</span>
+        <button id="btn-clear" class="btn-text-action">Clear</button>
       </div>
-      <ul id="log-list" class="log-list">
-        <li class="empty-log">Telemetry stream waiting for initialization...</li>
+      <ul id="log-list" class="log-items">
+        <li class="empty-log">No safety events recorded.</li>
       </ul>
     </section>
-  </main>
+
+  </div>
 
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
