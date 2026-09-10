@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,64 +10,40 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 </head>
-
 <body>
 
 <div class="app">
 
-    <!-- =====================================================
-         SIDEBAR
-    ====================================================== -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-
-        <!-- BRAND -->
         <div class="brand">
-            <div class="brand-icon">
-                👁️
-            </div>
+            <div class="brand-icon">👁️</div>
             <div>
                 <h2>Guardian Eye</h2>
                 <span>Driver Telemetry AI</span>
             </div>
         </div>
 
-        <!-- NAVIGATION -->
         <nav>
             <p class="nav-title">MONITORING</p>
-
-            <a href="#overview" class="nav-item active" data-section="overview">
-                📊 Overview
-            </a>
-
-            <a href="#threat-detection" class="nav-item" data-section="threat-detection">
-                🚨 Fatigue & Safety Alerts
-            </a>
-
-            <a href="#traffic-analytics" class="nav-item" data-section="traffic-analytics">
-                📹 Live Vision Feed
-            </a>
-
-            <a href="#ai-insights" class="nav-item" data-section="ai-insights">
-                🤖 AI Telemetry Insights
-            </a>
+            <a href="#overview" class="nav-item active">📊 Overview</a>
+            <a href="#threat-detection" class="nav-item">🚨 Safety Intervention</a>
+            <a href="#traffic-analytics" class="nav-item">📹 Vision Feed</a>
+            <a href="#ai-insights" class="nav-item">🤖 System Diagnostics</a>
         </nav>
 
-        <!-- SYSTEM STATUS -->
         <div class="sidebar-status">
             <p class="nav-title">SYSTEM STATUS</p>
-
             <div class="system-item">
-                <span id="ai-status-dot" class="dot green"></span>
+                <span class="dot green"></span>
                 Inference Engine
-                <b id="ai-status-text">ONLINE</b>
+                <b>ONLINE</b>
             </div>
-
             <div class="system-item">
                 <span id="gps-status-dot" class="dot green"></span>
                 GPS Telemetry
-                <b id="gps-status-text">TRACKING</b>
+                <b id="gps-status-text">STANDBY</b>
             </div>
-
             <div class="system-item">
                 <span class="dot green"></span>
                 Vision Pipeline
@@ -76,334 +51,191 @@
             </div>
         </div>
 
-        <!-- FOOTER -->
         <div class="sidebar-footer">
             <span>Guardian Eye AI</span>
             <small>Automotive Safety Prototype</small>
         </div>
-
     </aside>
 
-    <!-- =====================================================
-         MAIN
-    ====================================================== -->
+    <!-- MAIN -->
     <main class="main">
 
-        <!-- =================================================
-             OVERVIEW
-        ================================================== -->
-        <section id="overview" class="dashboard-section">
-
-            <!-- HEADER -->
-            <header class="topbar">
-                <div>
-                    <h1>AI Driver Telemetry</h1>
-                    <p>Real-time vigilance tracking, head pose detection & speed telemetry</p>
+        <!-- HEADER -->
+        <header class="topbar">
+            <div>
+                <h1>AI Driver Telemetry</h1>
+                <p>Real-time vigilance tracking, head pose detection & speed telemetry</p>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <button id="btn-toggle" class="btn-action">START MONITORING</button>
+                <div class="live-indicator">
+                    <span class="pulse"></span>
+                    <span id="badge-status">STANDBY</span>
                 </div>
+            </div>
+        </header>
 
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <button id="btn-toggle" class="nav-item active" style="border: 1px solid #1e293b; cursor: pointer; padding: 9px 18px; font-weight: 700;">
-                        START MONITORING
-                    </button>
-                    <div class="live-indicator">
-                        <span class="pulse"></span>
-                        <span id="badge-status">STANDBY</span>
-                    </div>
-                </div>
-            </header>
-
-            <!-- STATUS -->
-            <section id="statusAlert" class="status normal">
-                <div class="status-icon" id="statusIcon">
-                    🟢
-                </div>
-
-                <div>
-                    <strong id="statusText">
-                        DRIVER ATTENTIVE & ROAD FOCUSED
-                    </strong>
-                    <span id="confidenceText">
-                        Driver State: Normal • Head Center
-                    </span>
-                </div>
-            </section>
-
-            <!-- METRICS -->
-            <section class="metrics">
-
-                <!-- VELOCITY -->
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span>LIVE SPEED</span>
-                        <div class="metric-icon" style="background: #172554; color: #60a5fa;">
-                            🚀
-                        </div>
-                    </div>
-                    <div id="speed-display" class="metric-value">
-                        0
-                    </div>
-                    <span class="unit">km/h</span>
-                    <div class="progress">
-                        <div id="speedBar" class="progress-fill" style="background: #38bdf8; width: 0%;"></div>
-                    </div>
-                </div>
-
-                <!-- EYE ASPECT RATIO (EAR) -->
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span>EYE RATIO (EAR)</span>
-                        <div class="metric-icon" style="background: #1e1b4b; color: #a78bfa;">
-                            👁️
-                        </div>
-                    </div>
-                    <div id="ear-display" class="metric-value">
-                        0.00
-                    </div>
-                    <span class="unit">threshold &lt; 0.22</span>
-                    <div class="progress">
-                        <div id="earBar" class="progress-fill" style="background: #a855f7; width: 0%;"></div>
-                    </div>
-                </div>
-
-                <!-- HEAD POSE -->
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span>HEAD POSTURE</span>
-                        <div class="metric-icon" style="background: #142e2b; color: #34d399;">
-                            📐
-                        </div>
-                    </div>
-                    <div id="pose-display" class="metric-value" style="font-size: 20px; line-height: 38px;">
-                        Center
-                    </div>
-                    <span class="unit">3D Pitch/Yaw</span>
-                </div>
-
-                <!-- DRIVER STATE -->
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span>DRIVER STATE</span>
-                        <div class="metric-icon" style="background: #0d2818; color: #4ade80;">
-                            🛡️
-                        </div>
-                    </div>
-                    <div id="state-display" class="metric-value" style="font-size: 20px; line-height: 38px; color: #4ade80;">
-                        Attentive
-                    </div>
-                    <span class="unit">Vigilance Index</span>
-                </div>
-
-                <!-- TOTAL INCIDENTS -->
-                <div class="metric-card">
-                    <div class="metric-top">
-                        <span>TOTAL ALERTS</span>
-                        <div class="metric-icon" style="background: #3f1717; color: #f87171;">
-                            ⚠️
-                        </div>
-                    </div>
-                    <div id="alert-counter" class="metric-value" style="color: #f87171;">
-                        0
-                    </div>
-                    <span class="unit">critical events</span>
-                </div>
-
-            </section>
-
+        <!-- TOP STATUS STRIP -->
+        <section id="statusAlert" class="status normal">
+            <div class="status-icon" id="statusIcon">🟢</div>
+            <div>
+                <strong id="statusText">DRIVER ATTENTIVE & ROAD FOCUSED</strong>
+                <span id="confidenceText">Driver State: Normal • Head Center</span>
+            </div>
         </section>
 
-        <!-- =================================================
-             THREAT / ALERT DETECTION
-        ================================================== -->
-        <section id="threat-detection" class="dashboard-section">
-
-            <div class="panel threat-section">
-
-                <div class="panel-header">
-                    <div>
-                        <h2>🚨 Driver Safety Intervention</h2>
-                        <span>Real-time drowsiness and distraction anomaly detection</span>
-                    </div>
-                    <span id="threatStatus" class="chart-live">
-                        ● CONTINUOUS SCAN
-                    </span>
+        <!-- 5 METRICS CARDS -->
+        <section class="metrics">
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span>LIVE SPEED</span>
+                    <div class="metric-icon">🚀</div>
                 </div>
-
-                <!-- NORMAL BANNER -->
-                <div id="noThreat" class="normal-threat" style="padding: 16px; background: #082016; border: 1px solid #14532d; border-radius: 8px; font-size: 13px; color: #4ade80;">
-                    🟢 No driver safety anomalies detected.
-                    <span style="display: block; color: #94a3b8; font-size: 11px; margin-top: 4px;">
-                        Facial telemetry indicates active attention on the forward roadway.
-                    </span>
+                <div class="metric-value"><span id="speed-display">0</span> <span class="unit">km/h</span></div>
+                <div class="progress">
+                    <div id="speedBar" class="progress-fill"></div>
                 </div>
-
-                <!-- ACTIVE ALERT -->
-                <div id="alertPanel" class="alert-panel hidden">
-                    <div class="alert-header">
-                        <div>
-                            <h2 id="warning-text">🚨 Active Safety Intervention</h2>
-                            <span id="warning-sub">Driver impairment detected</span>
-                        </div>
-                        <span id="severity" class="severity">CRITICAL</span>
-                    </div>
-
-                    <div class="alert-metrics">
-                        <div>
-                            <span>Current Speed</span>
-                            <strong id="alertSpeed">-- km/h</strong>
-                        </div>
-                        <div>
-                            <span>Observed EAR</span>
-                            <strong id="alertEAR">--</strong>
-                        </div>
-                        <div>
-                            <span>Head Posture</span>
-                            <strong id="alertPose">--</strong>
-                        </div>
-                        <div>
-                            <span>Intervention</span>
-                            <strong id="alertAction" style="color: #fca5a5;">AUDIO BUZZER</strong>
-                        </div>
-                    </div>
-
-                    <div class="possible-cause">
-                        <strong>Safety Diagnostic:</strong>
-                        <p id="alertDiagnostic">
-                            Extended eyelid closure or downward head tilt exceeding safe operational bounds.
-                        </p>
-                    </div>
-                </div>
-
             </div>
 
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span>EYE RATIO (EAR)</span>
+                    <div class="metric-icon">👁️</div>
+                </div>
+                <div class="metric-value"><span id="ear-display">0.00</span> <span class="unit">/ 0.22</span></div>
+                <div class="progress">
+                    <div id="earBar" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span>HEAD POSTURE</span>
+                    <div class="metric-icon">📐</div>
+                </div>
+                <div id="pose-display" class="metric-value metric-text">Center</div>
+                <span class="unit">Pitch / Yaw</span>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span>DRIVER STATE</span>
+                    <div class="metric-icon">🛡️</div>
+                </div>
+                <div id="state-display" class="metric-value metric-text status-good">Attentive</div>
+                <span class="unit">Vigilance State</span>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-top">
+                    <span>TOTAL ALERTS</span>
+                    <div class="metric-icon">⚠️</div>
+                </div>
+                <div id="alert-counter" class="metric-value alert-text">0</div>
+                <span class="unit">Critical Events</span>
+            </div>
         </section>
 
-        <!-- =================================================
-             VISION / TRAFFIC ANALYTICS (Camera Viewport)
-        ================================================== -->
-        <section id="traffic-analytics" class="dashboard-section" style="margin-top: 16px;">
+        <!-- ACTIVE ALERT / INTERVENTION PANEL -->
+        <section id="alertPanel" class="alert-panel hidden">
+            <div class="alert-header">
+                <div>
+                    <h2 id="warning-text">🚨 Active Safety Intervention</h2>
+                    <span id="warning-sub">Driver impairment detected</span>
+                </div>
+                <span class="severity">CRITICAL</span>
+            </div>
+            <div class="alert-metrics">
+                <div>
+                    <span>Current Speed</span>
+                    <strong id="alertSpeed">0 km/h</strong>
+                </div>
+                <div>
+                    <span>Observed EAR</span>
+                    <strong id="alertEAR">0.00</strong>
+                </div>
+                <div>
+                    <span>Head Posture</span>
+                    <strong id="alertPose">Center</strong>
+                </div>
+                <div>
+                    <span>Intervention</span>
+                    <strong style="color: #fca5a5;">AUDIO BUZZER</strong>
+                </div>
+            </div>
+            <div class="possible-cause">
+                <strong>Diagnostic Detail:</strong>
+                <p id="alertDiagnostic">Driver eyelid closure or downward head tilt exceeded safe reaction threshold.</p>
+            </div>
+        </section>
 
-            <div class="panel chart-panel">
-
+        <!-- MAIN DASHBOARD GRID (Video + AI Specs) -->
+        <section class="dashboard-grid">
+            <div class="panel">
                 <div class="panel-header">
                     <div>
                         <h2>📹 Vision Telemetry Feed</h2>
-                        <span>MediaPipe Neural Landmark Stream (468 points)</span>
+                        <span>MediaPipe FaceMesh Landmark Stream</span>
                     </div>
-                    <span class="chart-live">
-                        ● FEED ACTIVE
-                    </span>
+                    <span class="chart-live">● SENSOR LIVE</span>
                 </div>
-
-                <div style="position: relative; width: 100%; max-height: 420px; background: #070b14; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center;">
-                    <video id="webcam" playsinline autoplay muted style="width: 100%; max-height: 420px; object-fit: cover; transform: scaleX(-1); border-radius: 8px;"></video>
+                <div class="video-container">
+                    <video id="webcam" playsinline autoplay muted></video>
                 </div>
-
             </div>
 
-        </section>
-
-        <!-- =================================================
-             AI INSIGHTS & EVENTS
-        ================================================== -->
-        <section id="ai-insights" class="dashboard-section" style="margin-top: 16px;">
-
-            <div class="dashboard-grid">
-
-                <!-- AI ANALYSIS -->
-                <div class="panel ai-panel">
-                    <div class="panel-header">
-                        <div>
-                            <h2>🤖 Model Telemetry</h2>
-                            <span>Real-time Facial Geometry Engine</span>
-                        </div>
-                    </div>
-
-                    <div id="predictionBadge" class="prediction normal">
-                        🟢 OPTIMAL
-                    </div>
-
-                    <div class="ai-stat">
-                        <span>EAR Threshold</span>
-                        <strong>0.22</strong>
-                    </div>
-
-                    <div class="ai-stat">
-                        <span>Max Bow Latency</span>
-                        <strong>3.0 Seconds</strong>
-                    </div>
-
-                    <div class="ai-stat">
-                        <span>Confidence Level</span>
-                        <strong id="confidenceScore">0.30 (Optimized)</strong>
-                    </div>
-                </div>
-
-                <!-- SYSTEM INFO -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <div>
-                            <h2>⚙️ Hardware & Edge Config</h2>
-                            <span>Client Device Profile</span>
-                        </div>
-                    </div>
-
-                    <div class="system-grid">
-                        <div class="system-card">
-                            <span>Processing</span>
-                            <strong>WASM / WebGL</strong>
-                        </div>
-                        <div class="system-card">
-                            <span>Telemetry API</span>
-                            <strong>HTML5 Geolocation</strong>
-                        </div>
-                        <div class="system-card">
-                            <span>Audio Engine</span>
-                            <strong>Web Audio Synth</strong>
-                        </div>
-                        <div class="system-card">
-                            <span>Host Engine</span>
-                            <strong class="online">● PythonAnywhere</strong>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- RECENT EVENTS -->
-            <div class="panel events-panel" style="margin-top: 16px;">
+            <div class="panel">
                 <div class="panel-header">
                     <div>
-                        <h2>🚨 Recent Safety Incidents</h2>
-                        <span>Recorded fatigue, distraction, and head-bow alerts</span>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <span id="eventCount" class="event-count">0</span>
-                        <button id="btn-clear" style="background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 11px; font-weight: 700;">
-                            CLEAR
-                        </button>
+                        <h2>🤖 System Telemetry</h2>
+                        <span>Facial Landmark & Posture Engine</span>
                     </div>
                 </div>
-
-                <div id="events" class="events">
-                    <div class="empty" id="emptyLog">
-                        No anomalies detected yet. Continuous monitoring active.
-                    </div>
-                    <ul id="log-list" style="list-style: none;"></ul>
+                <div id="predictionBadge" class="prediction normal">🟢 OPTIMAL</div>
+                <div class="ai-stat">
+                    <span>EAR Threshold</span>
+                    <strong>0.22</strong>
+                </div>
+                <div class="ai-stat">
+                    <span>Bow Duration Limit</span>
+                    <strong>3.0 Seconds</strong>
+                </div>
+                <div class="ai-stat">
+                    <span>Occlusion Persistence</span>
+                    <strong>4.5 Seconds</strong>
+                </div>
+                <div class="ai-stat">
+                    <span>Audio Engine</span>
+                    <strong>Web Audio Synthesizer</strong>
                 </div>
             </div>
-
         </section>
 
-        <!-- FOOTER -->
+        <!-- RECENT EVENTS PANEL -->
+        <section class="panel" style="margin-top: 16px;">
+            <div class="panel-header">
+                <div>
+                    <h2>🚨 Safety Incident Log</h2>
+                    <span>Flight recorder event history</span>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span id="eventCount" class="event-count">0</span>
+                    <button id="btn-clear" class="btn-clear-action">CLEAR</button>
+                </div>
+            </div>
+            <div id="events" class="events">
+                <div class="empty" id="emptyLog">No anomalies recorded. Road focus confirmed.</div>
+                <ul id="log-list"></ul>
+            </div>
+        </section>
+
         <footer>
-            Guardian Eye AI <span>•</span> Driver Fatigue & Head-Bow Detection <span>•</span> Edge Neural Telemetry
+            Guardian Eye AI <span>•</span> Driver Fatigue & Head-Bow Telemetry <span>•</span> Edge AI
         </footer>
 
     </main>
-
 </div>
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
-
 </body>
 </html>
