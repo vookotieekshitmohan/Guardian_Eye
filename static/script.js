@@ -1,21 +1,37 @@
 // DOM Element Bindings
 const video = document.getElementById('webcam');
 const earDisplay = document.getElementById('ear-display');
+const earBar = document.getElementById('earBar');
 const stateDisplay = document.getElementById('state-display');
 const poseDisplay = document.getElementById('pose-display');
+const speedDisplay = document.getElementById('speed-display');
+const speedBar = document.getElementById('speedBar');
 const alertCounterDisplay = document.getElementById('alert-counter');
-const warningBanner = document.getElementById('warning-banner');
+
+// Header and Status Badges
+const badgeStatus = document.getElementById('badge-status');
+const statusAlert = document.getElementById('statusAlert');
+const statusIcon = document.getElementById('statusIcon');
+const statusText = document.getElementById('statusText');
+const confidenceText = document.getElementById('confidenceText');
+const predictionBadge = document.getElementById('predictionBadge');
+
+// Threat Detection Panels
+const noThreat = document.getElementById('noThreat');
+const alertPanel = document.getElementById('alertPanel');
 const warningText = document.getElementById('warning-text');
+const warningSub = document.getElementById('warning-sub');
+const alertSpeed = document.getElementById('alertSpeed');
+const alertEAR = document.getElementById('alertEAR');
+const alertPose = document.getElementById('alertPose');
+const alertDiagnostic = document.getElementById('alertDiagnostic');
+
+// Controls & Logs
 const btnToggle = document.getElementById('btn-toggle');
 const btnClear = document.getElementById('btn-clear');
-const badgeStatus = document.getElementById('badge-status');
+const eventCount = document.getElementById('eventCount');
 const logList = document.getElementById('log-list');
-
-// Cockpit HUD Specific Elements (handles gauge bars if present)
-const speedDisplay = document.getElementById('speed-display');
-const speedProgress = document.getElementById('speed-progress');
-const earFill = document.getElementById('ear-fill');
-const stateSub = document.getElementById('state-sub');
+const emptyLog = document.getElementById('emptyLog');
 
 // Landmark configurations (MediaPipe Face Mesh)
 const LEFT_EYE = [362, 385, 387, 263, 373, 380];
@@ -26,11 +42,9 @@ const CHIN = 152;
 const LEFT_CHEEK = 234;
 const RIGHT_CHEEK = 454;
 
-// Operational Thresholds
 const EAR_THRESHOLD = 0.22;
 const DROWSY_FRAMES = 22;
 
-// Runtime State Variables
 let closedFrames = 0;
 let headBowedStartTime = null;
 let lastKnownPosture = "Center";
@@ -43,16 +57,14 @@ let alarmInterval = null;
 let currentAlarmType = null;
 let sirenToggle = false;
 
-// GPS Speed State
+// Speed tracking state
 let currentSpeedKmh = 0;
 let geoWatchId = null;
 
-// Euclidean distance calculation
 function dist(p1, p2) {
   return Math.hypot(p1.x - p2.x, p1.y - p2.y);
 }
 
-// Eye Aspect Ratio (EAR)
 function calculateEAR(landmarks, indices) {
   const p1 = landmarks[indices[0]];
   const p2 = landmarks[indices[1]];
@@ -66,7 +78,6 @@ function calculateEAR(landmarks, indices) {
   return vertical / horizontal;
 }
 
-// Head Pose & Bow Detection
 function checkHeadPosture(landmarks) {
   const forehead = landmarks[FOREHEAD];
   const nose = landmarks[NOSE_TIP];
@@ -80,7 +91,7 @@ function checkHeadPosture(landmarks) {
   const noseToChinRatio = (chin.y - nose.y) / faceHeight;
   const noseToLeftRatio = Math.abs(nose.x - leftCheek.x) / faceWidth;
 
-  // Tolerant pitch down detection threshold
+  // Pitch down detection: more forgiving threshold
   if (noseToChinRatio < 0.33 || (faceHeight / faceWidth) < 1.15 || nose.y > 0.65) {
     return "Head Bowed Down";
   }
@@ -90,7 +101,7 @@ function checkHeadPosture(landmarks) {
   return "Center";
 }
 
-// Sound 1: High-pitched sawtooth chirp for Drowsiness
+// Audio Alerts
 function playDrowsyTone() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const osc = audioCtx.createOscillator();
@@ -109,7 +120,6 @@ function playDrowsyTone() {
   if (navigator.vibrate) navigator.vibrate([150, 50, 150]);
 }
 
-// Sound 2: Alternating dual-frequency heavy square siren for Head Bowed Down
 function playBowedTone() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   const osc = audioCtx.createOscillator();
@@ -151,10 +161,10 @@ function stopSound() {
   currentAlarmType = null;
 }
 
-// Logging to backend API
 function recordAlert(type, detail) {
   totalAlerts++;
   if (alertCounterDisplay) alertCounterDisplay.innerText = totalAlerts;
+  if (eventCount) eventCount.innerText = totalAlerts;
 
   fetch('/api/alert', {
     method: 'POST',
@@ -169,30 +179,72 @@ function recordAlert(type, detail) {
 }
 
 function appendLogItem(record) {
-  if (!logList) return;
-  const empty = logList.querySelector('.empty-log');
-  if (empty) empty.remove();
+  if (emptyLog) emptyLog.style.display = 'none';
 
   const li = document.createElement('li');
-  li.className = 'log-item';
+  li.className = 'event';
   li.innerHTML = `
-    <span class="log-type">${record.type}</span>
-    <span class="log-time">${record.timestamp}</span>
+    <div class="event-icon">⚠️</div>
+    <div class="event-info">
+      <strong style="color: #fca5a5;">${record.type}</strong>
+      <span>${record.timestamp} • Vehicle Speed: ${currentSpeedKmh} km/h</span>
+    </div>
+    <div class="event-confidence">CRITICAL</div>
   `;
   logList.prepend(li);
 }
 
-// Face landmark inference callback
+// GPS Speed Watcher
+function startSpeedTracking() {
+  if ("geolocation" in navigator) {
+    geoWatchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const speedMps = position.coords.speed;
+        if (speedMps !== null && !isNaN(speedMps) && speedMps > 0) {
+          currentSpeedKmh = Math.round(speedMps * 3.6);
+        } else {
+          currentSpeedKmh = 0;
+        }
+
+        if (speedDisplay) speedDisplay.innerText = currentSpeedKmh;
+        if (speedBar) {
+          const speedPct = Math.min((currentSpeedKmh / 120) * 100, 100);
+          speedBar.style.width = `${speedPct}%`;
+        }
+      },
+      () => {
+        if (speedDisplay) speedDisplay.innerText = "0";
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 5000
+      }
+    );
+  }
+}
+
+function stopSpeedTracking() {
+  if (geoWatchId !== null) {
+    navigator.geolocation.clearWatch(geoWatchId);
+    geoWatchId = null;
+    currentSpeedKmh = 0;
+    if (speedDisplay) speedDisplay.innerText = "0";
+    if (speedBar) speedBar.style.width = "0%";
+  }
+}
+
+// Landmark Inference Loop
 function handleLandmarks(results) {
   const now = Date.now();
 
-  // Face disappearance & occlusion handling
+  // Face disappearance / extreme bow occlusion handling
   if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0) {
-    // If lost while bowing down, keep accumulating bowed time up to 4.5 seconds
     if (lastKnownPosture === "Head Bowed Down" && (now - lastSeenFaceTime) < 4500) {
-      if (poseDisplay) poseDisplay.innerText = "Head Bowed (Obscured)";
-      if (stateDisplay) stateDisplay.innerText = "Tracking Down...";
-      
+      poseDisplay.innerText = "Bowed (Obscured)";
+      stateDisplay.innerText = "Tracking Down";
+      stateDisplay.style.color = "#fbbf24";
+
       const elapsed = (now - headBowedStartTime) / 1000;
       if (elapsed >= 3.0) {
         triggerWarning("HEAD BOWED DOWN (>3s)! LOOK UP!", "HEAD_BOWED");
@@ -200,12 +252,9 @@ function handleLandmarks(results) {
       return;
     }
 
-    if (stateDisplay) {
-      stateDisplay.innerText = "No Face Found";
-      stateDisplay.className = "metric-value status-warn";
-    }
-    if (poseDisplay) poseDisplay.innerText = "--";
-    if (stateSub) stateSub.innerText = "SCANNING FIELD OF VIEW";
+    stateDisplay.innerText = "No Face";
+    stateDisplay.style.color = "#64748b";
+    poseDisplay.innerText = "--";
     headBowedStartTime = null;
     clearWarning();
     return;
@@ -222,13 +271,11 @@ function handleLandmarks(results) {
   lastKnownPosture = posture;
 
   if (earDisplay) earDisplay.innerText = avgEAR.toFixed(2);
-  if (poseDisplay) poseDisplay.innerText = posture;
-
-  // Update EAR gauge fill bar if in HUD layout
-  if (earFill) {
-    const earPercent = Math.min(Math.max((avgEAR / 0.40) * 100, 0), 100);
-    earFill.style.width = `${earPercent}%`;
+  if (earBar) {
+    const earPct = Math.min(Math.max((avgEAR / 0.40) * 100, 0), 100);
+    earBar.style.width = `${earPct}%`;
   }
+  if (poseDisplay) poseDisplay.innerText = posture;
 
   // Drowsiness evaluation
   if (avgEAR < EAR_THRESHOLD) {
@@ -252,7 +299,6 @@ function handleLandmarks(results) {
     headBowedStartTime = null;
   }
 
-  // Warning trigger checks
   if (bowedMoreThan3Sec) {
     triggerWarning("HEAD BOWED DOWN (>3s)! LOOK UP!", "HEAD_BOWED");
   } else if (closedFrames >= DROWSY_FRAMES) {
@@ -263,14 +309,31 @@ function handleLandmarks(results) {
 }
 
 function triggerWarning(message, type) {
-  if (warningBanner) warningBanner.classList.remove('hidden');
-  if (warningText) warningText.innerText = message;
-  
-  if (stateDisplay) {
-    stateDisplay.innerText = type === "HEAD_BOWED" ? "HEAD DOWN!" : "DROWSY!";
-    stateDisplay.className = "metric-value status-danger";
-  }
-  if (stateSub) stateSub.innerText = "SAFETY SYSTEM ENGAGED";
+  // Update Top Status Bar
+  statusAlert.className = "status anomaly";
+  statusIcon.innerText = "🚨";
+  statusText.innerText = message;
+  confidenceText.innerText = `Intervention Dispatched • Speed: ${currentSpeedKmh} km/h`;
+
+  // Update Prediction Badge
+  predictionBadge.className = "prediction anomaly";
+  predictionBadge.innerText = "🚨 ANOMALY DETECTED";
+
+  // Update State card
+  stateDisplay.innerText = type === "HEAD_BOWED" ? "HEAD DOWN!" : "DROWSY!";
+  stateDisplay.style.color = "#f87171";
+
+  // Display Intervention Panel
+  noThreat.classList.add('hidden');
+  alertPanel.classList.remove('hidden');
+  warningText.innerText = message;
+  warningSub.innerText = type === "HEAD_BOWED" ? "Head bowed below safe sightline" : "Extended eye closure detected";
+  alertSpeed.innerText = `${currentSpeedKmh} km/h`;
+  alertEAR.innerText = earDisplay.innerText;
+  alertPose.innerText = poseDisplay.innerText;
+  alertDiagnostic.innerText = type === "HEAD_BOWED" 
+    ? "Driver head tilted downward for > 3 continuous seconds. Forward vision fully impaired." 
+    : "Driver eyelid closure exceeded safe reaction duration. Critical fatigue alert.";
 
   if (currentAlarmType !== type) {
     startSound(type);
@@ -279,61 +342,24 @@ function triggerWarning(message, type) {
 }
 
 function clearWarning() {
-  if (warningBanner) warningBanner.classList.add('hidden');
-  if (stateDisplay) {
-    stateDisplay.innerText = "Attentive";
-    stateDisplay.className = "metric-value status-good";
-  }
-  if (stateSub) stateSub.innerText = "SYSTEM OPTIMAL";
+  statusAlert.className = "status normal";
+  statusIcon.innerText = "🟢";
+  statusText.innerText = "DRIVER ATTENTIVE & ROAD FOCUSED";
+  confidenceText.innerText = `Head Pose: ${lastKnownPosture} • Live Speed: ${currentSpeedKmh} km/h`;
+
+  predictionBadge.className = "prediction normal";
+  predictionBadge.innerText = "🟢 OPTIMAL";
+
+  stateDisplay.innerText = "Attentive";
+  stateDisplay.style.color = "#4ade80";
+
+  alertPanel.classList.add('hidden');
+  noThreat.classList.remove('hidden');
+
   stopSound();
 }
 
-// GPS Speed Tracking via Geolocation API
-function startSpeedTracking() {
-  if ("geolocation" in navigator) {
-    geoWatchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const speedMps = position.coords.speed;
-        if (speedMps !== null && !isNaN(speedMps) && speedMps > 0) {
-          currentSpeedKmh = Math.round(speedMps * 3.6);
-        } else {
-          currentSpeedKmh = 0;
-        }
-
-        if (speedDisplay) {
-          // If in HUD format with separate unit span, update numeric only
-          speedDisplay.innerText = currentSpeedKmh;
-        }
-        if (speedProgress) {
-          const speedPercent = Math.min((currentSpeedKmh / 120) * 100, 100);
-          speedProgress.style.width = `${speedPercent}%`;
-        }
-      },
-      () => {
-        if (speedDisplay) speedDisplay.innerText = "0";
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 1000,
-        timeout: 5000
-      }
-    );
-  } else if (speedDisplay) {
-    speedDisplay.innerText = "0";
-  }
-}
-
-function stopSpeedTracking() {
-  if (geoWatchId !== null) {
-    navigator.geolocation.clearWatch(geoWatchId);
-    geoWatchId = null;
-    currentSpeedKmh = 0;
-    if (speedDisplay) speedDisplay.innerText = "0";
-    if (speedProgress) speedProgress.style.width = "0%";
-  }
-}
-
-// Initialize MediaPipe FaceMesh
+// MediaPipe Initialization
 const faceMesh = new FaceMesh({
   locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
 });
@@ -347,7 +373,7 @@ faceMesh.setOptions({
 
 faceMesh.onResults(handleLandmarks);
 
-// Toggle Monitoring Control
+// Toggle Control
 btnToggle.addEventListener('click', async () => {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -362,17 +388,9 @@ btnToggle.addEventListener('click', async () => {
     await cameraInstance.start();
     startSpeedTracking();
 
-    const btnTextSpan = btnToggle.querySelector('.btn-text');
-    if (btnTextSpan) {
-      btnTextSpan.innerText = "DISENGAGE MONITOR";
-    } else {
-      btnToggle.innerText = "Stop Monitor";
-    }
-
-    if (badgeStatus) {
-      badgeStatus.innerText = "ONLINE";
-      badgeStatus.className = "hud-pill pill-active";
-    }
+    btnToggle.innerText = "STOP MONITORING";
+    btnToggle.style.background = "#7f1d1d";
+    badgeStatus.innerText = "LIVE MONITORING";
     isMonitoring = true;
   } else {
     await cameraInstance.stop();
@@ -381,17 +399,9 @@ btnToggle.addEventListener('click', async () => {
     headBowedStartTime = null;
     lastKnownPosture = "Center";
 
-    const btnTextSpan = btnToggle.querySelector('.btn-text');
-    if (btnTextSpan) {
-      btnTextSpan.innerText = "INITIALIZE SYSTEM";
-    } else {
-      btnToggle.innerText = "Activate Monitor";
-    }
-
-    if (badgeStatus) {
-      badgeStatus.innerText = "STANDBY";
-      badgeStatus.className = "hud-pill pill-standby";
-    }
+    btnToggle.innerText = "START MONITORING";
+    btnToggle.style.background = "";
+    badgeStatus.innerText = "STANDBY";
     isMonitoring = false;
   }
 });
@@ -399,8 +409,10 @@ btnToggle.addEventListener('click', async () => {
 // Clear incident logs
 btnClear.addEventListener('click', () => {
   fetch('/api/clear', { method: 'POST' }).then(() => {
-    if (logList) logList.innerHTML = '<li class="empty-log">Telemetry stream waiting for initialization...</li>';
+    logList.innerHTML = '';
+    if (emptyLog) emptyLog.style.display = 'block';
     totalAlerts = 0;
-    if (alertCounterDisplay) alertCounterDisplay.innerText = "0";
+    alertCounterDisplay.innerText = "0";
+    eventCount.innerText = "0";
   });
 });
